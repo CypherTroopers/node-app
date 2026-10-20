@@ -2,17 +2,17 @@
 
 ## 1. Download and install
 
-Sign in to GitHub, download your ZIP, and extract it. No cloning is required. These downloads expire on November 3, 2026.
+Download the app for your OS. No GitHub account or cloning is required. [Release page](https://github.com/CypherTroopers/node-app/releases/latest).
 
-| OS                  | Download                                                                                                 | Install                                        |
-| ------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| Windows x64         | [Windows ZIP](https://github.com/CypherTroopers/node-app/actions/runs/39420949839/artifacts/12263693137) | Extract the ZIP.                               |
-| Mac — Apple silicon | [Mac ZIP](https://github.com/CypherTroopers/node-app/actions/runs/39420949839/artifacts/12262429443)     | Open the DMG and drag the app to Applications. |
-| Linux x64           | [Linux ZIP](https://github.com/CypherTroopers/node-app/actions/runs/39420949839/artifacts/12263134727)   | Extract the ZIP.                               |
+| OS                  | Download                                                                                                                                 | Install                                        |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Windows x64         | [Windows EXE](https://github.com/CypherTroopers/node-app/releases/download/v0.1.0/ColossusX-Node-Manager-0.1.0-win-x64.exe)              | Save the downloaded file.                      |
+| Mac — Apple silicon | [Mac DMG](https://github.com/CypherTroopers/node-app/releases/download/v0.1.0/ColossusX-Node-Manager-0.1.0-mac-arm64.dmg)                | Open the DMG and drag the app to Applications. |
+| Linux x64           | [Linux AppImage](https://github.com/CypherTroopers/node-app/releases/download/v0.1.0/ColossusX-Node-Manager-0.1.0-linux-x86_64.AppImage) | Save the downloaded file.                      |
 
 ## 2. Run
 
-Windows — open PowerShell in the extracted folder:
+Windows — open PowerShell in the download folder:
 
 ```powershell
 .\ColossusX-Node-Manager-0.1.0-win-x64.exe
@@ -24,7 +24,7 @@ Mac:
 open -a "ColossusX Node Manager"
 ```
 
-Linux — open a terminal in the extracted folder:
+Linux — open a terminal in the download folder:
 
 ```sh
 chmod +x ./ColossusX-Node-Manager-0.1.0-linux-x86_64.AppImage

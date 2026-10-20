@@ -1,6 +1,6 @@
 # Standalone application validation — 2026-10-20
 
-Scope: the standalone application originally developed at `work/cypher-node-app`, prepared for the independent `CypherTroopers/node-app` repository. The preserved plugin, its remote `plugin` branch, original CypherClaw, operator state, and live nodes were not modified. No application release was published during validation. Referenced artifacts are local validation evidence and are excluded from normal source commits.
+Scope: the standalone application originally developed at `work/cypher-node-app`, prepared for the independent `CypherTroopers/node-app` repository. The preserved plugin, its remote `plugin` branch, original CypherClaw, operator state, and live nodes were not modified. The initial validation did not publish a release; the later v0.1.0 publication is recorded below. Referenced artifacts are local validation evidence and are excluded from normal source commits.
 
 ## Build and tests
 
@@ -59,7 +59,7 @@ The repair passed all **191 tests in 17 files** on the frozen source: Vitest 13.
 | `linux-amd64`   |     125,715,866 | `82b27e82b4e2fe916e8eccd46b3584aeb4decd81836b0ace85698d178e400dbf` |
 | `darwin-arm64`  |     129,406,202 | `3bf593d0f98414bd2726c4d541da913c61f7887649753221fb008faae6f044ed` |
 
-All three receipts bind the same upstream distribution `9ca4b9793d6e3527f4439ab4cc29a500a160c134`, source `546d43442e8156591786dc3c1ca1596f014509e3`, and 17 validated native artifacts. The prepared-source archive hash `810252ecf0c52dc8a5ba577e903b2f619d7aabd4774c7b4f8eb62c8d892a4cfc` and its generated pins were independently checked. Installer ZIP member sizes and their small receipt/checksum files were compared through HTTP ranges; full installers were not downloaded and rehashed again locally. Evidence is retained in `artifacts/validation/ci-39420949839/artifact-verification.json`, with per-OS receipts and `ci-39420949839-windows-runtime.log`. Artifacts are retained for 14 days; no Release was published. Later documentation-only commits do not change this tested code.
+All three receipts bind the same upstream distribution `9ca4b9793d6e3527f4439ab4cc29a500a160c134`, source `546d43442e8156591786dc3c1ca1596f014509e3`, and 17 validated native artifacts. The prepared-source archive hash `810252ecf0c52dc8a5ba577e903b2f619d7aabd4774c7b4f8eb62c8d892a4cfc` and its generated pins were independently checked. Installer ZIP member sizes and their small receipt/checksum files were compared through HTTP ranges; full installers were not downloaded and rehashed again locally. Evidence is retained in `artifacts/validation/ci-39420949839/artifact-verification.json`, with per-OS receipts and `ci-39420949839-windows-runtime.log`. Actions artifacts are retained for 14 days; the public release is recorded below. Later documentation-only commits do not change this tested code.
 
 Before the repair, two new manager regression cases failed in an isolated snapshot for the intended reasons: Close incorrectly succeeded despite failed host release, and a failed control host remained in `starting`. The snapshot reused the frozen dependency installation; pnpm's automatic dependency verification could not recreate a symlinked module directory, but Vitest itself executed both assertions and reported those product-boundary failures. Later checks invoke the installed tools directly rather than reconciling a shared installation.
 
@@ -95,4 +95,12 @@ Before/after screenshots and the inspected gallery are in `artifacts/proof/stand
 
 Supported targets are Windows x64 portable EXE, macOS ARM64 DMG, and Linux x64 AppImage. Hosted build results are recorded above; physical Windows/macOS desktop behavior was not exercised on this Linux host. The packaging guard requires each matching native host and its platform PTY package. macOS Intel, Linux ARM64, and Windows ARM64 are intentionally unsupported because corresponding node artifacts are unavailable.
 
-Signing, notarization, publication, and automatic updates were not performed. The app does not migrate another installation's chain, keystore, or transaction history.
+Signing, notarization, and automatic updates were not performed. The app does not migrate another installation's chain, keystore, or transaction history.
+
+## Public release v0.1.0
+
+[v0.1.0](https://github.com/CypherTroopers/node-app/releases/tag/v0.1.0) was published on October 20, 2026 at the exact tested app commit `7c6720ad9ef5890174bb8c3d602e42b0d2166ea6`. The three installers were promoted unchanged from successful Actions run `39420949839`; each complete download was independently rehashed against its build receipt before upload. All six uploaded assets (three installers, combined checksums, native pins, and build provenance) matched GitHub's server-reported SHA-256 values.
+
+The public release is marked Latest. All three direct installer URLs returned HTTP 200 and the expected byte lengths to requests without an Authorization header. Release downloads do not use the 14-day Actions artifact retention. The README now links directly to the public EXE, DMG, and AppImage and retains only download/install, run, and UI instructions. Release notes preserve the signing and live-validation limits above. No application code, dependencies, or native pins changed during publication.
+
+Receipts and promoted assets are retained locally under `artifacts/releases/v0.1.0`, including `release-manifest.json`, `published-release.json`, and `publication-verification.json`.
