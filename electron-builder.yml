@@ -29,10 +29,10 @@ win:
 mac:
   icon: desktop/icon.png
   category: public.app-category.finance
-  type: distribution
+  identity: "-"
   forceCodeSigning: true
   hardenedRuntime: true
-  notarize: true
+  notarize: false
   target:
     - target: dmg
       arch:
