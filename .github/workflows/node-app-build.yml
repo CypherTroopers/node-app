@@ -204,7 +204,8 @@ jobs:
         env:
           ELECTRON_RUN_AS_NODE: "1"
         run: |
-          pnpm exec electron -e '
+          trap 'rm -f .ci-desktop-runtime.cjs' EXIT
+          cat > .ci-desktop-runtime.cjs <<'NODE'
             const assert = require("node:assert/strict");
             const { DatabaseSync } = require("node:sqlite");
             const db = new DatabaseSync(":memory:");
@@ -225,7 +226,8 @@ jobs:
               });
             }
             console.log(JSON.stringify({ electron: process.versions.electron, node: process.versions.node, platform: process.platform, arch: process.arch }));
-          '
+          NODE
+          node node_modules/electron/cli.js .ci-desktop-runtime.cjs
 
       - name: Build the native installer without publishing
         run: pnpm run ${{ matrix.script }}
