@@ -201,6 +201,7 @@ jobs:
         run: pnpm typecheck
 
       - name: Verify the embedded desktop runtime
+        timeout-minutes: 2
         env:
           ELECTRON_RUN_AS_NODE: "1"
         run: |
@@ -213,13 +214,26 @@ jobs:
             db.close();
             assert.equal(process.versions.electron, "44.9.1");
             if (process.platform === "win32") {
-              const terminal = require("@lydell/node-pty").spawn("cmd.exe", ["/d", "/c", "echo cypher-desktop-runtime"], {
+              console.log(JSON.stringify({ phase: "pty-before-require" }));
+              const pty = require("@lydell/node-pty");
+              console.log(JSON.stringify({ phase: "pty-before-spawn" }));
+              const terminal = pty.spawn("cmd.exe", ["/d", "/c", "echo cypher-desktop-runtime"], {
                 name: "xterm", cols: 80, rows: 24, cwd: process.cwd(), env: process.env, useConpty: true,
               });
+              console.log(JSON.stringify({ phase: "pty-spawned", pid: terminal.pid }));
               let output = "";
-              const deadline = setTimeout(() => { terminal.kill(); process.exit(1); }, 15000);
-              terminal.onData((data) => { output += data; });
+              const deadline = setTimeout(() => {
+                console.log(JSON.stringify({ phase: "pty-timeout-before-kill", markerSeen: output.includes("cypher-desktop-runtime") }));
+                terminal.kill();
+                console.log(JSON.stringify({ phase: "pty-timeout-after-kill" }));
+                process.exit(1);
+              }, 15000);
+              terminal.onData((data) => {
+                output += data;
+                console.log(JSON.stringify({ phase: "pty-data", length: data.length, markerSeen: output.includes("cypher-desktop-runtime") }));
+              });
               terminal.onExit(({ exitCode }) => {
+                console.log(JSON.stringify({ phase: "pty-exit", exitCode, markerSeen: output.includes("cypher-desktop-runtime") }));
                 clearTimeout(deadline);
                 assert.equal(exitCode, 0);
                 assert.ok(output.includes("cypher-desktop-runtime"));
