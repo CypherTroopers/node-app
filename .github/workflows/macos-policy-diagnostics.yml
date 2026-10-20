@@ -1,0 +1,127 @@
+name: Diagnose macOS candidate policy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  diagnose:
+    name: Compare the pinned ad-hoc candidate with native controls
+    runs-on: macos-15
+    timeout-minutes: 15
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+    steps:
+      - name: Check out the diagnostic collector
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Download the original candidate's prepared source
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: "12301408452"
+          github-token: ${{ github.token }}
+          repository: CypherTroopers/node-app
+          run-id: "39503544602"
+          path: prepared-source
+          merge-multiple: true
+
+      - name: Set up the original native Node.js version
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24.22.0"
+          architecture: arm64
+
+      - name: Verify the complete prepared archive before extraction
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { createHash } from "node:crypto";
+          import { createReadStream } from "node:fs";
+          import fs from "node:fs/promises";
+          const expected = "af723e6a1725d0dbbd8aa2b29ddd7edaf5ccf494cfd079cb35b28222455d8b49";
+          const hash = createHash("sha256");
+          for await (const bytes of createReadStream("prepared-source/prepared-source.tgz")) hash.update(bytes);
+          assert.equal(hash.digest("hex"), expected, "Original prepared archive hash mismatch");
+          const source = JSON.parse(await fs.readFile("prepared-source/source.json", "utf8"));
+          const native = JSON.parse(await fs.readFile("prepared-source/native-sync.json", "utf8"));
+          assert.equal(source.appRepository, "CypherTroopers/node-app");
+          assert.equal(source.appSourceCommit, "bd919a538f7d8a327cb01d3b4b9ce79236d5c063");
+          assert.equal(source.workflowRun, "39503544602");
+          assert.equal(source.preparedSourceSha256, expected);
+          assert.equal(source.nativeDistributionCommit, "9ca4b9793d6e3527f4439ab4cc29a500a160c134");
+          assert.equal(native.distributionCommit, source.nativeDistributionCommit);
+          NODE
+          mkdir candidate
+          tar -xzf prepared-source/prepared-source.tgz -C candidate
+          mkdir -p candidate/artifacts
+          cp prepared-source/native-sync.json candidate/artifacts/native-sync.json
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { createHash } from "node:crypto";
+          import fs from "node:fs/promises";
+          const source = JSON.parse(await fs.readFile("prepared-source/source.json", "utf8"));
+          assert.equal(createHash("sha256").update(await fs.readFile("candidate/src/native/node-pins.ts")).digest("hex"), source.nodePinsSha256);
+          assert.equal(process.platform, "darwin");
+          assert.equal(process.arch, "arm64");
+          NODE
+
+      - name: Install the original frozen candidate dependencies
+        working-directory: candidate
+        run: |
+          corepack enable
+          corepack prepare pnpm@12.9.0 --activate
+          pnpm install --frozen-lockfile
+
+      - name: Rebuild the pinned candidate without publishing
+        id: build
+        working-directory: candidate
+        run: pnpm run dist:mac
+
+      - name: Retain the unchanged candidate verifier's result
+        id: verifier
+        continue-on-error: true
+        timeout-minutes: 3
+        working-directory: candidate
+        run: bash scripts/verify-macos-release.sh
+
+      - name: Compare native policy diagnostics without changing acceptance
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        timeout-minutes: 6
+        env:
+          DIAGNOSTICS_DIR: ${{ runner.temp }}/macos-policy-${{ github.run_id }}-${{ github.run_attempt }}
+        run: bash scripts/diagnose-macos-policy.sh "$GITHUB_WORKSPACE/candidate"
+
+      - name: Retain diagnostic-only candidate bytes and evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: macos-policy-diagnostic-candidate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            candidate/release/*.dmg
+            prepared-source/source.json
+            prepared-source/native-sync.json
+            ${{ runner.temp }}/macos-policy-${{ github.run_id }}-${{ github.run_attempt }}
+            candidate/artifacts/macos-release-verification/*.log
+            candidate/artifacts/macos-release-verification/status.tsv
+            candidate/artifacts/macos-release-verification/status.json
+            candidate/artifacts/proof/desktop-*/report.json
+            candidate/artifacts/proof/desktop-*/packaged-node.png
+          if-no-files-found: warn
+          compression-level: 0
+          retention-days: 14
+
+      - name: Preserve the candidate verification failure
+        if: always() && steps.verifier.outcome != 'success'
+        run: |
+          printf '::error::The unchanged candidate verifier did not pass. Diagnostic artifacts are not accepted release assets.\n'
+          exit 1
