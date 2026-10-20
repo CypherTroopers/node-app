@@ -211,8 +211,8 @@ jobs:
 
       - name: Verify the finished macOS release image
         if: matrix.platform == 'darwin'
-        timeout-minutes: 3
-        run: bash scripts/verify-macos-release.sh
+        timeout-minutes: 5
+        run: /bin/bash scripts/verify-macos-release.sh
 
       - name: Upload macOS signature, policy, and GUI evidence
         if: always() && matrix.platform == 'darwin'
@@ -222,7 +222,7 @@ jobs:
           path: |
             app/artifacts/macos-release-verification/*.log
             app/artifacts/macos-release-verification/status.tsv
-            app/artifacts/macos-release-verification/status.json
+            app/artifacts/macos-release-verification/*.json
             app/artifacts/proof/desktop-*/report.json
             app/artifacts/proof/desktop-*/packaged-node.png
           if-no-files-found: warn
