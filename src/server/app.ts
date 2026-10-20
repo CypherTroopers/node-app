@@ -6,7 +6,11 @@ import { CypherAppService } from "../service.js";
 import { acquireInstance } from "./instance.js";
 import { LocalSessions } from "./session.js";
 
-export type CypherAppOptions = { packageRoot: string; stateDir: string };
+export type CypherAppOptions = {
+  packageRoot: string;
+  stateDir: string;
+  windowsHostPath?: string;
+};
 export type CypherAppAddress = { origin: string; bootstrapUrl: string };
 
 class HttpError extends Error {
@@ -68,7 +72,7 @@ export class CypherLocalApp {
   #closing: Promise<void> | undefined;
 
   constructor(readonly options: CypherAppOptions) {
-    this.#service = new CypherAppService(options.packageRoot);
+    this.#service = new CypherAppService(options.packageRoot, options.windowsHostPath);
     this.#operations = new CypherOperations(this.#service);
     this.#server = http.createServer((request, response) => {
       void this.#handle(request, response).catch(() => {

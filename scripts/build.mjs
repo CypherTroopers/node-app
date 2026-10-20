@@ -20,6 +20,7 @@ const backend = await build({
     server: "src/server/app.ts",
     desktop: "desktop/main.ts",
     "transfer-store.worker": "src/cypher/transfer-store.worker.ts",
+    "windows-pty-host": "src/cypher/windows-pty-host.ts",
   },
   outdir: "dist",
   platform: "node",

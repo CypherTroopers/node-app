@@ -4,6 +4,9 @@ executableName: colossusx-node-manager
 asar: true
 asarUnpack:
   - dist/transfer-store.worker.js
+  - dist/windows-pty-host.js
+  - node_modules/@lydell/**
+  - package.json
 npmRebuild: false
 beforePack: desktop/before-pack.cjs
 directories:

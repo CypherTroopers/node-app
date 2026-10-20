@@ -47,6 +47,7 @@ type ManagerOptions = {
   endpointExists?: () => Promise<boolean>;
   stopTimeoutMs?: number;
   transferStore?: CypherTransferStore;
+  windowsHostPath?: string;
 };
 const targets: Record<string, { binary: string; script: string }> = {
   "linux/x64": { binary: "cypher-linux-amd64", script: "colossusX_linux.sh" },
@@ -377,6 +378,10 @@ export class CypherNodeManager {
           script,
           rootDir: paths.rootDir,
           env: { ...this.#env },
+          windowsHostPath: this.#options.windowsHostPath,
+          signal: authority.signal
+            ? AbortSignal.any([authority.signal, this.#lifetime.signal])
+            : this.#lifetime.signal,
           assertCurrent: () => this.#assert(authority),
         });
         this.#process = owned;
@@ -392,6 +397,14 @@ export class CypherNodeManager {
             }
           }
           this.#logs = this.#logs.slice(-200);
+        });
+        owned.onError?.((message) => {
+          if (this.#process !== owned) return;
+          this.#state = "error";
+          this.#error = message;
+          this.#connected = false;
+          this.#node = null;
+          this.#refreshAllowed = false;
         });
         this.#exit = new Promise<void>((resolve) => {
           owned.onExit((code) => {
@@ -508,6 +521,16 @@ export class CypherNodeManager {
         }
       }
       if (this.#process === owned) {
+        try {
+          // The helper may retain ConPTY workers after the launcher exits.
+          // Retire it only after this owner has also confirmed node IPC is absent.
+          await owned.release?.();
+        } catch {
+          this.#state = "error";
+          this.#error =
+            "The Windows terminal host could not finish closing. Check the node, then retry Stop or Close.";
+          throw new CypherOperationError(this.#error);
+        }
         this.#process = null;
         this.#connected = false;
         this.#node = null;

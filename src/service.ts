@@ -21,7 +21,10 @@ export class CypherAppService {
   #cleanupFailed = false;
   #mutations: Promise<unknown> = Promise.resolve();
 
-  constructor(readonly packageRoot: string) {}
+  constructor(
+    readonly packageRoot: string,
+    readonly windowsHostPath?: string,
+  ) {}
 
   start(stateDir: string): void {
     if (this.#owners || this.#closing || this.#cleanupFailed) {
@@ -41,6 +44,7 @@ export class CypherAppService {
         assetDir: installer.nodeRoot,
         stateDir,
         transferStore: transfers,
+        windowsHostPath: this.windowsHostPath,
       }),
       wallet: new WalletGeneratorManager(installer.walletRoot, signal),
       signal,

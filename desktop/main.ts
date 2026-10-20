@@ -104,6 +104,15 @@ async function start(): Promise<void> {
   service = createCypherApp({
     packageRoot: app.getAppPath(),
     stateDir: path.join(app.getPath("userData"), "runtime"),
+    windowsHostPath:
+      process.platform === "win32"
+        ? path.join(
+            app.isPackaged
+              ? path.join(process.resourcesPath, "app.asar.unpacked")
+              : app.getAppPath(),
+            "dist/windows-pty-host.js",
+          )
+        : undefined,
   });
   const { origin, bootstrapUrl } = await service.listen();
   if (quitting) {

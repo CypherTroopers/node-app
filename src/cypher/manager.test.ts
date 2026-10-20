@@ -28,6 +28,8 @@ class FakeProcess implements CypherProcess {
   exited = false;
   dataListener: (data: string) => void = () => {};
   exitListener: (code: number | null) => void = () => {};
+  errorListener: (message: string) => void = () => {};
+  release = vi.fn(async () => {});
   interrupt = vi.fn(() => {
     this.exit(0);
   });
@@ -36,6 +38,9 @@ class FakeProcess implements CypherProcess {
   }
   onExit(listener: (code: number | null) => void) {
     this.exitListener = listener;
+  }
+  onError(listener: (message: string) => void) {
+    this.errorListener = listener;
   }
   exit(code: number | null) {
     this.exited = true;
@@ -597,8 +602,8 @@ describe("Cypher node owner", () => {
     });
   });
 
-  it("does not claim a Windows node stopped when IPC still responds after PowerShell exits", async () => {
-    const { manager, rpc } = fixture({ platform: "win32" });
+  it("does not release a Windows host when IPC still responds after PowerShell exits", async () => {
+    const { manager, rpc, process } = fixture({ platform: "win32" });
     await manager.start(authority);
     rpc.mockResolvedValue("Cypher/test");
     await manager.stop(authority);
@@ -608,21 +613,42 @@ describe("Cypher node owner", () => {
       owned: true,
       pid: null,
     });
+    expect(process.release).not.toHaveBeenCalled();
   });
 
-  it("does not claim Windows shutdown for an inaccessible pipe after PowerShell exits", async () => {
-    const { manager, rpc } = fixture({ platform: "win32" });
+  it("does not release a Windows host for an inaccessible pipe after PowerShell exits", async () => {
+    const { manager, rpc, process } = fixture({ platform: "win32" });
     await manager.start(authority);
     rpc.mockRejectedValue(new CypherIpcError("IPC unavailable.", "EACCES"));
     await manager.stop(authority);
     await expect(manager.close()).rejects.toThrow("IPC unavailable");
     await expect(manager.status()).resolves.toMatchObject({ state: "error", owned: true });
+    expect(process.release).not.toHaveBeenCalled();
   });
 
-  it("confirms Windows shutdown only when its owned pipe is absent", async () => {
+  it("retains Windows ownership until true launcher exit, IPC absence, and host release finish", async () => {
     const { manager, rpc, process } = fixture({ platform: "win32" });
+    const released = deferred<void>();
+    process.interrupt.mockImplementation(() => {});
+    process.release.mockImplementation(() => released.promise);
     await manager.start(authority);
+    rpc.mockRejectedValue(new CypherIpcError("IPC endpoint absent.", "ENOENT"));
     await manager.stop(authority);
+    await expect(manager.status()).resolves.toMatchObject({ state: "stopping", owned: true });
+    expect(process.release).not.toHaveBeenCalled();
+    process.exit(0);
+    try {
+      await vi.advanceTimersByTimeAsync(0);
+      expect(process.release).toHaveBeenCalledOnce();
+      await expect(manager.status()).resolves.toMatchObject({
+        state: "stopping",
+        owned: true,
+        pid: null,
+      });
+      await expect(manager.start(authority)).rejects.toThrow("still stopping");
+    } finally {
+      released.resolve();
+    }
     await manager.close();
     await expect(manager.status()).resolves.toMatchObject({
       state: "stopped",
@@ -630,12 +656,44 @@ describe("Cypher node owner", () => {
       pid: null,
     });
     expect(process.interrupt).toHaveBeenCalledOnce();
-    expect(rpc).toHaveBeenCalledWith(
-      "\\\\.\\pipe\\cypher.ipc",
-      "web3_clientVersion",
-      [],
-      expect.any(Object),
-    );
+    expect(process.release).toHaveBeenCalledOnce();
+  });
+
+  it("retains a Windows host after failed release and retries Close without another interrupt", async () => {
+    const { manager, process } = fixture({ platform: "win32" });
+    process.release.mockRejectedValueOnce(new Error("Fixture host release failed"));
+    await manager.start(authority);
+    await manager.stop(authority);
+    await expect(manager.close()).rejects.toThrow();
+    await expect(manager.status()).resolves.toMatchObject({
+      state: "error",
+      owned: true,
+      pid: null,
+    });
+    expect(process.release).toHaveBeenCalledOnce();
+    expect(process.interrupt).toHaveBeenCalledOnce();
+    await manager.close();
+    await expect(manager.status()).resolves.toMatchObject({ state: "stopped", owned: false });
+    expect(process.release).toHaveBeenCalledTimes(2);
+    expect(process.interrupt).toHaveBeenCalledOnce();
+  });
+
+  it("does not treat a failed Windows control host as launcher exit even when IPC is absent", async () => {
+    const { manager, rpc, process } = fixture({ platform: "win32" });
+    process.interrupt.mockImplementation(() => {});
+    await manager.start(authority);
+    process.errorListener("The Windows control host failed.");
+    rpc.mockRejectedValue(new CypherIpcError("IPC endpoint absent.", "ENOENT"));
+    await expect(manager.status()).resolves.toMatchObject({
+      state: "error",
+      connected: false,
+      owned: true,
+      pid: 123,
+    });
+    await manager.stop(authority);
+    await vi.advanceTimersByTimeAsync(51);
+    await expect(manager.close()).rejects.toThrow("left running");
+    expect(process.release).not.toHaveBeenCalled();
   });
 
   it("finishes an accepted Windows stop after the requesting connection loses authority", async () => {
@@ -660,6 +718,7 @@ describe("Cypher node owner", () => {
     await manager.close();
     await expect(manager.status()).resolves.toMatchObject({ state: "stopped", owned: false });
     expect(process.interrupt).toHaveBeenCalledOnce();
+    expect(process.release).toHaveBeenCalledOnce();
   });
 
   it("confirms a Windows launcher that exits after its stop observation expired without interrupting again", async () => {

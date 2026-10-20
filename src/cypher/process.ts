@@ -6,6 +6,8 @@ export type CypherProcess = {
   onData(listener: (data: string) => void): void;
   onExit(listener: (code: number | null) => void): void;
   interrupt(): void;
+  release?(): Promise<void>;
+  onError?(listener: (message: string) => void): void;
 };
 export type CypherLaunchOptions = {
   platform: string;
@@ -13,35 +15,15 @@ export type CypherLaunchOptions = {
   rootDir: string;
   env: Record<string, string>;
   assertCurrent: () => void;
+  windowsHostPath?: string;
+  signal?: AbortSignal;
 };
 export async function launchCypherProcess(options: CypherLaunchOptions): Promise<CypherProcess> {
   if (options.platform === "win32") {
     // A Windows pipe child cannot receive a graceful SIGINT via child.kill().
     // ConPTY delivers Ctrl+C to the console running the supplied PowerShell script.
-    const { spawn: spawnPty } = await import("@lydell/node-pty");
-    options.assertCurrent();
-    const terminal = spawnPty(
-      "powershell.exe",
-      ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", options.script],
-      {
-        cwd: options.rootDir,
-        env: options.env,
-        name: "xterm-256color",
-        useConpty: true,
-        cols: 120,
-        rows: 30,
-      },
-    );
-    return {
-      pid: terminal.pid,
-      onData: (listener) => {
-        terminal.onData(listener);
-      },
-      onExit: (listener) => {
-        terminal.onExit(({ exitCode }) => listener(exitCode));
-      },
-      interrupt: () => terminal.write("\x03"),
-    };
+    const { launchWindowsProcess } = await import("./windows-process.js");
+    return launchWindowsProcess(options);
   }
   options.assertCurrent();
   const child = spawn("bash", [options.script], {
