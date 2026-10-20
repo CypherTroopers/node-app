@@ -4,11 +4,11 @@
 
 Download the app for your OS. No GitHub account or cloning is required. [Release page](https://github.com/CypherTroopers/node-app/releases/latest).
 
-| OS                  | Download                                                                                                                                 | Install                                        |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| Windows x64         | [Windows EXE](https://github.com/CypherTroopers/node-app/releases/download/v0.1.0/ColossusX-Node-Manager-0.1.0-win-x64.exe)              | Save the downloaded file.                      |
-| Mac — Apple silicon | [Mac DMG](https://github.com/CypherTroopers/node-app/releases/download/v0.1.0/ColossusX-Node-Manager-0.1.0-mac-arm64.dmg)                | Open the DMG and drag the app to Applications. |
-| Linux x64           | [Linux AppImage](https://github.com/CypherTroopers/node-app/releases/download/v0.1.0/ColossusX-Node-Manager-0.1.0-linux-x86_64.AppImage) | Save the downloaded file.                      |
+| OS                  | Download                                                                                                                                 | Install                                    |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| Windows x64         | [Windows EXE](https://github.com/CypherTroopers/node-app/releases/download/v0.1.0/ColossusX-Node-Manager-0.1.0-win-x64.exe)              | Save the downloaded file.                  |
+| Mac — Apple silicon | Temporarily unavailable                                                                                                                  | v0.1.0 fails macOS signature verification. |
+| Linux x64           | [Linux AppImage](https://github.com/CypherTroopers/node-app/releases/download/v0.1.0/ColossusX-Node-Manager-0.1.0-linux-x86_64.AppImage) | Save the downloaded file.                  |
 
 ## 2. Run
 
@@ -18,11 +18,7 @@ Windows — open PowerShell in the download folder:
 .\ColossusX-Node-Manager-0.1.0-win-x64.exe
 ```
 
-Mac:
-
-```sh
-open -a "ColossusX Node Manager"
-```
+Mac: a corrected signed release is pending.
 
 Linux — open a terminal in the download folder:
 
