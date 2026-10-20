@@ -2,17 +2,40 @@
 
 A local desktop application for **Windows x64, macOS Apple silicon (ARM64), and Linux x64**, preserving the CypherClaw artwork and six tabs: Overview, Node, Wallets, Send, Mining, and Explorer.
 
-The packaged application includes Electron and Node.js. **OpenClaw and a separate Node.js installation are not required to use it.** The [preserved OpenClaw plugin](https://github.com/CypherTroopers/cypherclaw/tree/plugin/work/cypher-node-plugin) remains unchanged in the original repository.
+**Download the desktop app below. You do not need to clone this repository, build the source, or install Git, Node.js, or OpenClaw.** The app includes its own desktop runtime.
+
+## Download and open the app
+
+Sign in to GitHub, then choose the download for your computer. Each link downloads a ZIP containing the ready-to-run app and its checksum files. [GitHub requires sign-in to download these build artifacts](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts).
+
+| Your computer                 | Download                                                                                                          | File to open after extracting the ZIP                |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Windows, Intel/AMD 64-bit     | [Download Windows ZIP](https://github.com/CypherTroopers/node-app/actions/runs/39420949839/artifacts/12263693137) | `ColossusX-Node-Manager-0.1.0-win-x64.exe`           |
+| Mac, Apple silicon (M-series) | [Download Mac ZIP](https://github.com/CypherTroopers/node-app/actions/runs/39420949839/artifacts/12262429443)     | `ColossusX-Node-Manager-0.1.0-mac-arm64.dmg`         |
+| Linux, Intel/AMD 64-bit       | [Download Linux ZIP](https://github.com/CypherTroopers/node-app/actions/runs/39420949839/artifacts/12263134727)   | `ColossusX-Node-Manager-0.1.0-linux-x86_64.AppImage` |
+
+These are version **0.1.0 test builds** from the [successful build run](https://github.com/CypherTroopers/node-app/actions/runs/39420949839). The downloads expire on **November 3, 2026 (UTC)**. No permanent GitHub Release download has been published. Intel Macs are not supported.
+
+1. Download the ZIP for your computer and extract it. On Windows, right-click the ZIP and choose **Extract All**. On Mac, double-click the ZIP. On Linux, use your archive manager's **Extract** action.
+2. Open the extracted app:
+   - **Windows:** Double-click the `.exe`. This is a portable app; no installer wizard is required.
+   - **Mac:** Open the `.dmg`, drag **ColossusX Node Manager** to **Applications**, then open it from Applications.
+   - **Linux:** Allow the `.AppImage` to run as a program in its file properties, then open it. If needed, see the Linux requirements below.
+3. The app opens a window with six tabs. Continue with **Prepare node** and **Start node** below.
+
+The test builds are unsigned, and the Mac app is not notarized. Windows or macOS may block launch or display a security warning. These builds have not completed full desktop acceptance on Windows/macOS; see [validation status](VALIDATION.md#platform-and-distribution-limits).
 
 ## Use the application
 
-1. Open your OS's portable `.exe`, `.dmg`/`.app`, or `.AppImage`. Grant the AppImage execute permission if your download tool did not retain it.
-2. Choose **Prepare node** / **ノードを準備**. Only this explicit action downloads this computer's fixed node executable, required Windows DLLs, and independent wallet generator. Every file must match its pinned size and SHA-256.
+1. Open **ColossusX Node Manager** using the instructions above.
+2. In **Overview** or **Node**, choose **Prepare node** and wait until setup reports **Ready**. This downloads only the node executable, required Windows DLLs, and independent wallet generator needed by your computer. The app checks every file before using it. An internet connection is required for this first setup.
 3. In **Node**, choose **Start node**. Preparation alone never starts a node or mining. Use **Connect IPC** for a compatible externally managed node.
 4. Manage wallets, reviewed/confirmed transfers, mining signer and reward recipient, and Explorer from the existing tabs.
 5. Use **Stop node**, or close the application to gracefully stop its owned node and settle downloads, wallet generation, and the transfer worker. Keep the application open while its node should run. Disconnecting an external node does not stop it.
 
 The desktop window signs into its own loopback service automatically. Signing out revokes the local session and clears sensitive page values. Close and reopen the desktop application to sign in again.
+
+The [preserved OpenClaw plugin](https://github.com/CypherTroopers/cypherclaw/tree/plugin/work/cypher-node-plugin) remains unchanged in the original repository.
 
 Linux needs your distribution's Electron desktop libraries and AppImage support. Without FUSE, the AppImage runtime supports `APPIMAGE_EXTRACT_AND_RUN=1 ./ColossusX-Node-Manager-0.1.0-linux-x86_64.AppImage`. Production does not disable Electron's sandbox; run as a normal desktop user.
 
