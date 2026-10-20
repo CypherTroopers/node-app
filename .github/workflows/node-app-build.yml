@@ -140,6 +140,7 @@ jobs:
             suffix: .dmg
     defaults:
       run:
+        shell: bash
         working-directory: app
     steps:
       - name: Download this run's exact prepared source
