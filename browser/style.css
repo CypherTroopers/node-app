@@ -1,0 +1,564 @@
+.cypher-manager,
+.cypher-manager-wallet {
+  display: block;
+  min-width: 0;
+}
+
+.cypher-manager {
+  box-sizing: border-box;
+  width: 100%;
+  color: var(--text, CanvasText);
+  font-family: var(--font-body, system-ui);
+  line-height: 1.5;
+}
+
+.cypher-manager *,
+.cypher-manager *::before,
+.cypher-manager *::after {
+  box-sizing: border-box;
+}
+
+.cypher-manager .content-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-4, 16px);
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto var(--space-5, 20px);
+  padding: var(--space-4, 16px);
+}
+
+.cypher-manager .page-title {
+  margin: 0;
+  color: var(--text-strong, CanvasText);
+  font-size: var(--control-ui-text-2xl, 24px);
+  font-weight: 600;
+}
+
+.cypher-manager .page-subtitle {
+  margin: var(--space-1, 4px) 0 0;
+  color: var(--muted, GrayText);
+  font-size: var(--control-ui-text-sm, 12px);
+}
+
+.cypher-manager .settings-page {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--space-3, 12px) var(--space-4, 16px) var(--space-8, 32px);
+  gap: var(--space-8, 32px);
+}
+
+.cypher-manager .settings-section {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: var(--space-3, 12px);
+}
+
+.cypher-manager .settings-section__copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: var(--space-1, 4px);
+}
+
+.cypher-manager .settings-section__heading {
+  margin: 0;
+  color: var(--muted-strong, CanvasText);
+  font-size: var(--control-ui-text-xs, 11px);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cypher-manager .settings-section__desc,
+.cypher-manager .settings-row__desc {
+  margin: 0;
+  color: var(--muted, GrayText);
+  font-size: var(--control-ui-text-sm, 12px);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.cypher-manager .settings-group {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border, ButtonBorder);
+  border-radius: var(--radius-lg, 14px);
+  background: var(--card, Canvas);
+}
+
+.cypher-manager .settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  gap: var(--space-4, 16px);
+}
+
+.cypher-manager .settings-row + .settings-row {
+  border-top: 1px solid color-mix(in srgb, var(--border, ButtonBorder) 60%, transparent);
+}
+
+.cypher-manager .settings-row__text {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cypher-manager .settings-row__title {
+  color: var(--text-strong, CanvasText);
+  font-size: var(--control-ui-text-md, 14px);
+  font-weight: 500;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.cypher-manager .settings-row__control {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  max-width: 60%;
+  gap: var(--space-2, 8px);
+}
+
+.cypher-manager .settings-row__value {
+  color: var(--muted, GrayText);
+  font-size: var(--control-ui-text-sm, 12px);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.cypher-manager .settings-row__value--mono,
+.cypher-manager .mono,
+.cypher-manager code,
+.cypher-manager pre {
+  font-family: var(--mono, monospace);
+}
+
+.cypher-manager .settings-row__value--mono {
+  font-size: var(--control-ui-text-xs, 11px);
+}
+
+.cypher-manager .settings-row--stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2, 8px);
+}
+
+.cypher-manager .settings-row--stacked .settings-row__control {
+  max-width: none;
+  justify-content: flex-start;
+}
+
+.cypher-manager .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--border, ButtonBorder);
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-elevated, ButtonFace);
+  color: inherit;
+  font: 500 13px var(--font-body, system-ui);
+  white-space: nowrap;
+  cursor: default;
+}
+
+.cypher-manager .btn:disabled,
+.cypher-manager input:disabled,
+.cypher-manager select:disabled {
+  opacity: 0.5;
+}
+
+.cypher-manager .btn:hover:not(:disabled) {
+  background: var(--bg-hover, ButtonFace);
+  border-color: var(--border-strong, ButtonBorder);
+}
+
+.cypher-manager .btn.primary {
+  border-color: transparent;
+  background: var(--primary, Highlight);
+  color: var(--primary-foreground, HighlightText);
+}
+
+.cypher-manager .btn:focus-visible,
+.cypher-manager input:focus-visible,
+.cypher-manager select:focus-visible {
+  outline: 2px solid var(--accent, Highlight);
+  outline-offset: 2px;
+}
+
+.cypher-manager .field {
+  display: grid;
+  gap: var(--space-2, 8px);
+  min-width: 0;
+  color: var(--muted, GrayText);
+  font-size: var(--control-ui-text-sm, 12px);
+}
+
+.cypher-manager .settings-input,
+.cypher-manager .settings-select {
+  width: 100%;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--border, ButtonBorder);
+  border-radius: var(--radius-md, 8px);
+  background-color: var(--bg-elevated, Canvas);
+  color: var(--text, CanvasText);
+  font: inherit;
+  font-size: var(--control-ui-text-md, 14px);
+}
+
+.cypher-manager .settings-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted, GrayText);
+  font-size: var(--control-ui-text-sm, 12px);
+  white-space: nowrap;
+}
+
+.cypher-manager .settings-status__dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--muted, GrayText);
+}
+
+.cypher-manager .settings-status--ok .settings-status__dot {
+  background: var(--ok, Highlight);
+}
+
+.cypher-manager .settings-status--danger .settings-status__dot {
+  background: var(--danger, Mark);
+}
+
+.cypher-manager .cypher-form,
+.cypher-manager .wallet-generator-result {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: var(--space-3, 12px);
+}
+
+.cypher-manager .cypher-form--columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cypher-manager .cypher-actions,
+.cypher-manager .wallet-generator-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 8px);
+  grid-column: 1 / -1;
+}
+
+.cypher-manager .cypher-paths {
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-2, 8px) var(--space-3, 12px);
+  margin: 0;
+  font-size: var(--control-ui-text-sm, 12px);
+}
+
+.cypher-manager .cypher-paths dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.cypher-manager .cypher-logs {
+  width: 100%;
+  max-height: 20rem;
+  overflow: auto;
+  margin: var(--space-3, 12px) 0;
+  padding: var(--space-3, 12px);
+  border: 1px solid var(--border, ButtonBorder);
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-elevated, Canvas);
+  font-size: var(--control-ui-text-sm, 12px);
+}
+
+.cypher-manager .wallet-generator-command {
+  width: 100%;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.cypher-manager .wallet-generator-result code {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .cypher-manager .cypher-form--columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cypher-manager .settings-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cypher-manager .settings-row__control {
+    width: 100%;
+    max-width: none;
+    flex-wrap: wrap;
+  }
+}
+
+.cypher-manager .cypher-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8, 32px);
+}
+
+.cypher-manager .cypher-panel[hidden] {
+  display: none;
+}
+
+.cypher-manager .cypher-connection-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3, 12px);
+  margin-block-end: var(--space-4, 16px);
+}
+
+.cypher-manager .cypher-wallet-list,
+.cypher-manager .cypher-transfer-list {
+  display: grid;
+  gap: var(--space-3, 12px);
+}
+
+.cypher-manager .cypher-wallet-row,
+.cypher-manager .cypher-transfer {
+  display: grid;
+  gap: var(--space-3, 12px);
+  padding: var(--space-4, 16px);
+  border-block-end: 1px solid var(--border, ButtonBorder);
+}
+
+.cypher-manager .cypher-wallet-details,
+.cypher-manager .cypher-transfer-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+}
+
+.cypher-manager .cypher-address {
+  overflow-wrap: anywhere;
+}
+
+.cypher-manager .cypher-explorer-link {
+  cursor: pointer;
+}
+
+.cypher-manager .cypher-confirm {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2, 8px);
+}
+
+.cypher-manager .cypher-details {
+  margin-block: var(--space-4, 16px);
+}
+
+.cypher-manager .cypher-details summary {
+  padding-block: var(--space-3, 12px);
+}
+
+.cypher-manager .settings-workspace {
+  width: 100%;
+  min-width: 0;
+}
+.cypher-manager .settings-workspace__body {
+  width: 100%;
+  min-width: 0;
+}
+.cypher-manager .page-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+}
+.cypher-manager .cypher-brand-mark {
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+.cypher-manager .cypher-hub-tabs {
+  display: flex;
+  width: 100%;
+  gap: var(--space-2, 8px);
+  border-bottom: 1px solid var(--border, ButtonBorder);
+}
+.cypher-manager .hub-tab {
+  flex: 0 0 auto;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: var(--space-1, 4px) var(--space-2, 8px) var(--space-2, 8px);
+  background: transparent;
+  color: var(--muted, GrayText);
+  font: 550 var(--control-ui-text-sm, 12px) var(--font-body, system-ui);
+  cursor: default;
+}
+.cypher-manager .hub-tab[aria-selected="true"] {
+  color: var(--text-strong, CanvasText);
+  border-bottom-color: var(--accent, Highlight);
+}
+.cypher-manager .hub-tab:focus-visible {
+  outline: 2px solid var(--accent, Highlight);
+  outline-offset: 2px;
+}
+@media (max-width: 640px) {
+  .cypher-manager .cypher-hub-tabs {
+    gap: var(--space-1, 4px);
+  }
+  .cypher-manager .hub-tab {
+    min-height: 36px;
+    padding-inline: var(--space-1, 4px);
+  }
+}
+
+:root {
+  color-scheme: dark;
+  --bg: #0e1015;
+  --card: #171a21;
+  --bg-elevated: #1c1f26;
+  --bg-hover: #252a33;
+  --text: #e8eaf0;
+  --text-strong: #f1f3f9;
+  --muted: #8b909b;
+  --muted-strong: #a2a8b4;
+  --border: #292e38;
+  --border-strong: #454b58;
+  --accent: #ff4d5a;
+  --primary: #ff4d5a;
+  --primary-foreground: white;
+  --ok: #23cf73;
+  --danger: #ff4d5a;
+  --font-body: Arial, sans-serif;
+  --mono: monospace;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+}
+
+cypher-node-application {
+  display: block;
+  min-width: 0;
+}
+
+.cypher-app-toolbar,
+.cypher-app-brand,
+.cypher-app-tools,
+.cypher-app-language {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cypher-app-toolbar {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+
+.cypher-app-brand {
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cypher-app-tools {
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.cypher-app-language {
+  gap: 8px;
+}
+
+.cypher-app-language select,
+.cypher-app-login input,
+cypher-node-application > .cypher-app-toolbar .btn,
+.cypher-app-login .btn {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  color: var(--text);
+  font: inherit;
+}
+
+.cypher-app-workspace {
+  padding-block: 20px;
+}
+
+.cypher-app-login,
+.cypher-app-message {
+  box-sizing: border-box;
+  width: min(100%, 520px);
+  margin: 48px auto;
+  padding: 24px;
+  line-height: 1.5;
+}
+
+.cypher-app-message {
+  margin-block: 16px;
+  color: var(--danger);
+}
+
+.cypher-app-login h1 {
+  color: var(--text-strong);
+  font-size: 24px;
+}
+
+.cypher-app-login p {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.cypher-app-login form {
+  display: grid;
+  gap: 12px;
+}
+
+.cypher-app-login input {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cypher-app-login .primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+@media (max-width: 640px) {
+  .cypher-app-toolbar {
+    padding: 12px 16px;
+  }
+  .cypher-app-local {
+    display: none;
+  }
+}

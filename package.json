@@ -1,0 +1,57 @@
+{
+  "name": "@cyphertroopers/cypher-node-app",
+  "version": "0.1.0",
+  "description": "Standalone ColossusX node manager for Windows, macOS, and Linux.",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "author": "CypherTroopers",
+  "main": "dist/desktop.js",
+  "engines": {
+    "node": ">=24.16.0 <25 || >=26.1.0"
+  },
+  "packageManager": "pnpm@12.9.0+sha512.8f64efa0b792986ca98ae568791bcd7722807e274c4f0c1d9853c62116495c584119db98762a2a5343b1684d361b9ae26fdd16d551666d7635346d3fae830ddd",
+  "bin": {
+    "cypher-node-manager": "dist/cli.js"
+  },
+  "files": [
+    "dist/",
+    "assets/",
+    "LICENSE",
+    "README.md",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "scripts": {
+    "native:sync": "node scripts/sync-native.mjs",
+    "build": "node scripts/build.mjs",
+    "start": "node scripts/build.mjs && electron .",
+    "serve": "node dist/cli.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/build.mjs && vitest run",
+    "desktop:dir": "node scripts/build.mjs && electron-builder --dir --publish never",
+    "dist:linux": "node scripts/build.mjs && electron-builder --linux AppImage --x64 --publish never",
+    "dist:win": "node scripts/build.mjs && electron-builder --win portable --x64 --publish never",
+    "dist:mac": "node scripts/build.mjs && electron-builder --mac dmg --arm64 --publish never"
+  },
+  "dependencies": {
+    "@lydell/node-pty": "1.2.0-beta.15"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.2",
+    "esbuild": "0.28.2",
+    "jsdom": "30.1.1",
+    "lit": "3.3.3",
+    "kysely": "0.29.6",
+    "playwright": "1.63.0",
+    "typescript": "7.1.0-dev.20260922.1",
+    "vitest": "5.0.1",
+    "oxfmt": "0.71.0",
+    "electron": "44.9.1",
+    "electron-builder": "26.15.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CypherTroopers/node-app.git"
+  },
+  "desktopName": "colossusx-node-manager"
+}

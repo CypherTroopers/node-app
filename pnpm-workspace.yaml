@@ -1,0 +1,12 @@
+packages:
+  - .
+
+allowBuilds:
+  "@lydell/node-pty": true
+  electron: true
+  esbuild: true
+  # Squirrel.Windows is unused: desktop targets are portable EXE, DMG, and AppImage.
+  electron-winstaller: false
+
+minimumReleaseAgeExclude:
+  - electron@44.9.1

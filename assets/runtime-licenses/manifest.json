@@ -1,0 +1,10 @@
+[
+  {
+    "name": "kysely",
+    "version": "0.29.6",
+    "license": "MIT",
+    "notices": [
+      "LICENSE"
+    ]
+  }
+]
