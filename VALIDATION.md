@@ -95,4 +95,4 @@ Before/after screenshots and the inspected gallery are in `artifacts/proof/stand
 
 Supported targets are Windows x64 portable EXE, macOS ARM64 DMG, and Linux x64 AppImage. Hosted build results are recorded above; physical Windows/macOS desktop behavior was not exercised on this Linux host. The packaging guard requires each matching native host and its platform PTY package. macOS Intel, Linux ARM64, and Windows ARM64 are intentionally unsupported because corresponding node artifacts are unavailable.
 
-Signing, notarization, publication, and automatic updates were not performed. The app does not migrate another installation's chain, keystore, or transaction history. See README for independent state and shutdown behavior.
+Signing, notarization, publication, and automatic updates were not performed. The app does not migrate another installation's chain, keystore, or transaction history.
