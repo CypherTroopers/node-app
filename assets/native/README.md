@@ -9,6 +9,11 @@ verifies already installed native artifacts instead of downloading them again
 when their pins still match. It replaces the launch files without changing chain
 data, keystores, or existing peer files.
 
+The bundled `assets/cypher/genesis.json` matches
+`CypherTroopers/cypher@9ca4b9793d6e3527f4439ab4cc29a500a160c134:genesis.json`.
+Prepare copies this app-bundled file; it does not fetch a moving remote genesis.
+An existing chain database is not reinitialized or migrated when the file changes.
+
 Cypher node distribution:
 `CypherTroopers/cypher@9ca4b9793d6e3527f4439ab4cc29a500a160c134`.
 Its three target manifests identify build source
