@@ -235,12 +235,7 @@ export class CypherNodeManager {
   }
   async #status(refresh = true): Promise<CypherStatus> {
     const paths = await this.#resolvePaths();
-    if (
-      refresh &&
-      this.#refreshAllowed &&
-      !this.#closed &&
-      (this.#connected || (this.#process && this.#state !== "stopping"))
-    ) {
+    if (refresh && this.#refreshAllowed && !this.#closed && this.#state !== "stopping") {
       try {
         await this.#snapshot();
       } catch (error) {
@@ -377,7 +372,12 @@ export class CypherNodeManager {
           platform: this.#platform,
           script,
           rootDir: paths.rootDir,
-          env: { ...this.#env },
+          // Native flags expand once themselves. Share the resolved filesystem path
+          // with launcher preparation without expanding native arguments a second time.
+          env: mergeProcessEnv(
+            [this.#env, { CYPHER_RESOLVED_DATADIR: paths.dataDir }],
+            this.#platform === "win32" ? "win32" : "linux",
+          ),
           windowsHostPath: this.#options.windowsHostPath,
           signal: authority.signal
             ? AbortSignal.any([authority.signal, this.#lifetime.signal])

@@ -1,6 +1,7 @@
 import path from "node:path";
 import { app, BrowserWindow, dialog, Menu, shell } from "electron";
 import { createCypherApp } from "../src/server/app.ts";
+import { resolveStateDirectory } from "../src/state-directory.js";
 
 const PRODUCT_NAME = "ColossusX Node Manager";
 const EXPLORER_ORIGIN = "https://colossusx.make-cph-great-again.community";
@@ -101,9 +102,15 @@ async function start(): Promise<void> {
   if (quitting) {
     return;
   }
+  const desktopData = app.getPath("userData");
+  const defaultDesktopData = path.join(app.getPath("appData"), PRODUCT_NAME);
+  const explicitStateDirectory =
+    desktopData === defaultDesktopData ? undefined : path.join(desktopData, "runtime");
+  const { stateDir, warning } = await resolveStateDirectory(explicitStateDirectory);
+  if (warning) console.warn(warning);
   service = createCypherApp({
     packageRoot: app.getAppPath(),
-    stateDir: path.join(app.getPath("userData"), "runtime"),
+    stateDir,
     windowsHostPath:
       process.platform === "win32"
         ? path.join(

@@ -53,12 +53,14 @@ beforeAll(async () => {
     `using System;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 class Fixture {
   static int Main(string[] args) {
     File.AppendAllText(Environment.GetEnvironmentVariable("CYPHER_FIXTURE_RECORD"), Convert.ToBase64String(Encoding.UTF8.GetBytes(String.Join("\\0", args))) + "\\n");
     if (Array.IndexOf(args, "init") >= 0) {
       if (Environment.GetEnvironmentVariable("CYPHER_FIXTURE_INIT_FAIL") == "1") return 23;
-      Directory.CreateDirectory(Path.Combine(args[Array.IndexOf(args, "--datadir") + 1], "cypher", "chaindata"));
+      string dataDir = Regex.Replace(args[Array.IndexOf(args, "--datadir") + 1], @"\\$\\{([^}]+)\\}", match => Environment.GetEnvironmentVariable(match.Groups[1].Value) ?? "");
+      Directory.CreateDirectory(Path.Combine(dataDir, "cypher", "chaindata"));
     } else if (Environment.GetEnvironmentVariable("CYPHER_FIXTURE_NODE_FAIL") == "1") return 29;
     return 0;
   }
@@ -102,7 +104,8 @@ const args = process.argv.slice(2);
 fs.appendFileSync(process.env.CYPHER_FIXTURE_RECORD, Buffer.from(args.join("\\0")).toString("base64") + "\\n");
 if (args.includes("init")) {
   if (process.env.CYPHER_FIXTURE_INIT_FAIL === "1") process.exit(23);
-  fs.mkdirSync(path.join(args[args.indexOf("--datadir") + 1], "cypher", "chaindata"), { recursive: true });
+  const dataDir = args[args.indexOf("--datadir") + 1].replace(/\\$\\{([^}]+)\\}/g, (_match, name) => process.env[name] ?? "");
+  fs.mkdirSync(path.join(dataDir, "cypher", "chaindata"), { recursive: true });
 } else if (process.env.CYPHER_FIXTURE_NODE_FAIL === "1") process.exit(29);
 `,
       { mode: 0o755 },
@@ -147,15 +150,27 @@ const option = (args: string[], name: string) => args[args.indexOf(name) + 1];
 
 for (const target of targets) {
   describe(target.script, () => {
-    it(
-      "starts the direct network without relay resources and preserves existing chain and peer files on restart",
-      async () => {
+    it.each(["absolute", "expanded"] as const)(
+      "starts the direct network without relay resources with %s paths and preserves chain and peer files on restart",
+      async (pathKind) => {
         const app = await fixture(target);
-        await app.run();
+        const nativeDataDir =
+          pathKind === "expanded"
+            ? path.join(app.root, "${CYPHER_FIXTURE_DIR}", "chain")
+            : app.dataDir;
+        const overrides =
+          pathKind === "expanded"
+            ? {
+                CYPHER_DATADIR: nativeDataDir,
+                CYPHER_FIXTURE_DIR: "state with spaces",
+                CYPHER_RESOLVED_DATADIR: app.dataDir,
+              }
+            : {};
+        await app.run(overrides);
         const [init, startup] = await app.calls();
         expect(init).toEqual([
           "--datadir",
-          app.dataDir,
+          nativeDataDir,
           "init",
           target.windows ? path.join(app.packageDir, "genesis.json") : "./genesis.json",
         ]);
@@ -176,7 +191,7 @@ for (const target of targets) {
           "--http.corsdomain": "*",
           "--port": "6000",
           "--gcmode": "archive",
-          "--datadir": app.dataDir,
+          "--datadir": nativeDataDir,
         }))
           expect(option(args, flag)).toBe(value);
         expect(args).toEqual(expect.arrayContaining(["--ws", "--http", "--metrics", "console"]));
@@ -190,11 +205,14 @@ for (const target of targets) {
         const staticNodes = await fs.readFile(staticFile, "utf8");
         expect(JSON.parse(staticNodes)).toEqual(peers);
         expect(await fs.readFile(trustedFile, "utf8")).toBe(staticNodes);
+        if (pathKind === "expanded") {
+          await expect(fs.stat(nativeDataDir)).rejects.toMatchObject({ code: "ENOENT" });
+        }
         const customStatic = JSON.stringify([peers[2]]) + "\n";
         const customTrusted = JSON.stringify([peers[3]]) + "\n";
         await fs.writeFile(staticFile, customStatic);
         await fs.writeFile(trustedFile, customTrusted);
-        await app.run();
+        await app.run(overrides);
         const restarted = await app.calls();
         expect(restarted).toHaveLength(3);
         expect(restarted[2]).toEqual(args);

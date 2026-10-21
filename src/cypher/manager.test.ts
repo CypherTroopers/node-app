@@ -452,6 +452,19 @@ describe("Cypher node owner", () => {
     await expect(manager.connect(authority)).resolves.toMatchObject({ connected: true });
   });
 
+  it("refreshes an external node's peers after a transient IPC failure", async () => {
+    const { manager, rpc } = fixture();
+    await manager.connect(authority);
+    rpc.mockRejectedValueOnce(new CypherIpcError("IPC temporarily unavailable.", "ECONNREFUSED"));
+    await expect(manager.status()).resolves.toMatchObject({ connected: false, node: null });
+    await expect(manager.status()).resolves.toMatchObject({
+      connected: true,
+      owned: false,
+      node: { peerCount: "0x2" },
+      error: null,
+    });
+  });
+
   it("joins graceful owner shutdown and clears the unused deadline", async () => {
     const { manager, process } = fixture();
     await manager.start(authority);

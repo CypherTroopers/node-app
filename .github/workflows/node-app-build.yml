@@ -203,7 +203,7 @@ jobs:
       - name: Verify launchers on the native host
         if: matrix.platform != 'linux'
         timeout-minutes: 2
-        run: node node_modules/vitest/vitest.mjs run src/cypher/launchers.test.ts
+        run: node node_modules/vitest/vitest.mjs run src/cypher/launchers.test.ts src/cypher/paths.integration.test.ts
 
       - name: Verify the embedded desktop runtime
         timeout-minutes: 2

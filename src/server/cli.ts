@@ -1,31 +1,12 @@
 #!/usr/bin/env node
-import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveStateDirectory } from "../state-directory.js";
 import { createCypherApp } from "./app.js";
 
 function argumentsForCli() {
   const args = process.argv.slice(2);
-  let stateDir =
-    process.platform === "win32"
-      ? path.join(
-          process.env.APPDATA ?? path.join(os.homedir(), "AppData", "Roaming"),
-          "ColossusX Node Manager",
-          "runtime",
-        )
-      : process.platform === "darwin"
-        ? path.join(
-            os.homedir(),
-            "Library",
-            "Application Support",
-            "ColossusX Node Manager",
-            "runtime",
-          )
-        : path.join(
-            process.env.XDG_DATA_HOME ?? path.join(os.homedir(), ".local", "share"),
-            "colossusx-node-manager",
-            "runtime",
-          );
+  let stateDir: string | undefined;
   let port = 48765;
   for (let index = 0; index < args.length; index += 1) {
     if (args[index] === "--help") {
@@ -45,9 +26,11 @@ function argumentsForCli() {
 
 const args = argumentsForCli();
 if (args) {
+  const { stateDir, warning } = await resolveStateDirectory(args.stateDir);
+  if (warning) console.warn(warning);
   const local = createCypherApp({
     packageRoot: fileURLToPath(new URL("../", import.meta.url)),
-    stateDir: args.stateDir,
+    stateDir,
   });
   const shutdown = () => {
     void local

@@ -23,6 +23,10 @@ if ([string]::IsNullOrWhiteSpace($env:CYPHER_DATADIR)) {
 } else {
   $DATADIR = Join-Path $SCRIPT_DIR $env:CYPHER_DATADIR
 }
+$NativeDatadir = $DATADIR
+if (![string]::IsNullOrWhiteSpace($env:CYPHER_RESOLVED_DATADIR)) {
+  $DATADIR = $env:CYPHER_RESOLVED_DATADIR
+}
 $CypherIpcArgs = @()
 if (![string]::IsNullOrWhiteSpace($env:CYPHER_IPC_PATH)) {
   $CypherIpcArgs = @("--ipcpath", $env:CYPHER_IPC_PATH)
@@ -125,7 +129,7 @@ if (!(Test-Path -Path $CHAINDATA_DIR -PathType Container)) {
   Write-Host "==> Init genesis"
 
   & $CYPHER_BIN `
-    --datadir "$DATADIR" `
+    --datadir "$NativeDatadir" `
     init "$GENESIS_FILE"
   if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
@@ -187,7 +191,7 @@ $CypherNodeArgs = @(
   "--http.api", "eth,web3,net,txpool",
   "--http.corsdomain", "*",
   "--port", "6000",
-  "--datadir", $DATADIR,
+  "--datadir", $NativeDatadir,
   "--networkid", "10101919",
   "--gcmode", "archive",
   "--bootnodes", $BOOTNODES
