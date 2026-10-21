@@ -78,7 +78,7 @@ afterAll(async () => {
 });
 
 async function fixture(target: (typeof targets)[number]) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cypher-launcher-"));
+  const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), "cypher-launcher-")));
   tempDirs.add(root);
   const packageDir = path.join(root, "package with spaces");
   const binDir = path.join(packageDir, "build", "bin");
