@@ -147,58 +147,64 @@ const option = (args: string[], name: string) => args[args.indexOf(name) + 1];
 
 for (const target of targets) {
   describe(target.script, () => {
-    it("starts the direct network without relay resources and preserves existing chain and peer files on restart", async () => {
-      const app = await fixture(target);
-      await app.run();
-      const [init, startup] = await app.calls();
-      expect(init).toEqual([
-        "--datadir",
-        app.dataDir,
-        "init",
-        target.windows ? path.join(app.packageDir, "genesis.json") : "./genesis.json",
-      ]);
-      expect(startup).toBeDefined();
-      const args = startup!;
-      expect(option(args, "--networkid")).toBe("10101919");
-      expect(option(args, "--bootnodes")).toBe(target.bootnodes.join(","));
-      for (const [flag, value] of Object.entries({
-        "--verbosity": target.script === "colossusX_linux.sh" ? "4" : "1",
-        "--rnetport": "7200",
-        "--syncmode": "full",
-        "--ws.addr": "0.0.0.0",
-        "--ws.port": "9251",
-        "--ws.origins": "*",
-        "--http.addr": "0.0.0.0",
-        "--http.port": "8000",
-        "--http.api": "eth,web3,net,txpool",
-        "--http.corsdomain": "*",
-        "--port": "6000",
-        "--gcmode": "archive",
-        "--datadir": app.dataDir,
-      }))
-        expect(option(args, flag)).toBe(value);
-      expect(args).toEqual(expect.arrayContaining(["--ws", "--http", "--metrics", "console"]));
-      expect(args.some((arg) => arg.includes("browser.public-relay"))).toBe(false);
-      expect(args.filter((arg) => arg === "--allow-insecure-unlock")).toHaveLength(1);
-      expect(args).not.toContain("--nat");
-      expect(args.at(-1)).toBe("console");
-      const peerDir = path.join(app.dataDir, "cypher");
-      const staticFile = path.join(peerDir, "static-nodes.json");
-      const trustedFile = path.join(peerDir, "trusted-nodes.json");
-      const staticNodes = await fs.readFile(staticFile, "utf8");
-      expect(JSON.parse(staticNodes)).toEqual(peers);
-      expect(await fs.readFile(trustedFile, "utf8")).toBe(staticNodes);
-      const customStatic = JSON.stringify([peers[2]]) + "\n";
-      const customTrusted = JSON.stringify([peers[3]]) + "\n";
-      await fs.writeFile(staticFile, customStatic);
-      await fs.writeFile(trustedFile, customTrusted);
-      await app.run();
-      const restarted = await app.calls();
-      expect(restarted).toHaveLength(3);
-      expect(restarted[2]).toEqual(args);
-      expect(await fs.readFile(staticFile, "utf8")).toBe(customStatic);
-      expect(await fs.readFile(trustedFile, "utf8")).toBe(customTrusted);
-    });
+    it(
+      "starts the direct network without relay resources and preserves existing chain and peer files on restart",
+      async () => {
+        const app = await fixture(target);
+        await app.run();
+        const [init, startup] = await app.calls();
+        expect(init).toEqual([
+          "--datadir",
+          app.dataDir,
+          "init",
+          target.windows ? path.join(app.packageDir, "genesis.json") : "./genesis.json",
+        ]);
+        expect(startup).toBeDefined();
+        const args = startup!;
+        expect(option(args, "--networkid")).toBe("10101919");
+        expect(option(args, "--bootnodes")).toBe(target.bootnodes.join(","));
+        for (const [flag, value] of Object.entries({
+          "--verbosity": target.script === "colossusX_linux.sh" ? "4" : "1",
+          "--rnetport": "7200",
+          "--syncmode": "full",
+          "--ws.addr": "0.0.0.0",
+          "--ws.port": "9251",
+          "--ws.origins": "*",
+          "--http.addr": "0.0.0.0",
+          "--http.port": "8000",
+          "--http.api": "eth,web3,net,txpool",
+          "--http.corsdomain": "*",
+          "--port": "6000",
+          "--gcmode": "archive",
+          "--datadir": app.dataDir,
+        }))
+          expect(option(args, flag)).toBe(value);
+        expect(args).toEqual(expect.arrayContaining(["--ws", "--http", "--metrics", "console"]));
+        expect(args.some((arg) => arg.includes("browser.public-relay"))).toBe(false);
+        expect(args.filter((arg) => arg === "--allow-insecure-unlock")).toHaveLength(1);
+        expect(args).not.toContain("--nat");
+        expect(args.at(-1)).toBe("console");
+        const peerDir = path.join(app.dataDir, "cypher");
+        const staticFile = path.join(peerDir, "static-nodes.json");
+        const trustedFile = path.join(peerDir, "trusted-nodes.json");
+        const staticNodes = await fs.readFile(staticFile, "utf8");
+        expect(JSON.parse(staticNodes)).toEqual(peers);
+        expect(await fs.readFile(trustedFile, "utf8")).toBe(staticNodes);
+        const customStatic = JSON.stringify([peers[2]]) + "\n";
+        const customTrusted = JSON.stringify([peers[3]]) + "\n";
+        await fs.writeFile(staticFile, customStatic);
+        await fs.writeFile(trustedFile, customTrusted);
+        await app.run();
+        const restarted = await app.calls();
+        expect(restarted).toHaveLength(3);
+        expect(restarted[2]).toEqual(args);
+        expect(await fs.readFile(staticFile, "utf8")).toBe(customStatic);
+        expect(await fs.readFile(trustedFile, "utf8")).toBe(customTrusted);
+        // Cold Windows process admission plus restart can exceed Vitest's 5s default.
+        // Each of the two execFile calls remains bounded to 10s.
+      },
+      target.windows ? 30_000 : undefined,
+    );
 
     it("does not start the node after genesis initialization fails", async () => {
       const app = await fixture(target);
