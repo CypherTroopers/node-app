@@ -38,6 +38,7 @@ export class CypherPage extends LitElement {
   private sendRequestId: string | null = null;
   @state() private reward: CypherRewardRegistration | null = null;
   @state() private selectedAccount = "";
+  @state() private accountAddress = "";
   @state() private recipient = "";
   @state() private threads = "1";
   @state() private duration = "300";
@@ -71,6 +72,7 @@ export class CypherPage extends LitElement {
       this.sendRecipient = "";
       this.amount = "";
       this.selectedAccount = "";
+      this.accountAddress = "";
       this.recipient = "";
       this.error = null;
       this.result = null;
@@ -223,6 +225,10 @@ export class CypherPage extends LitElement {
       this.invalidateQuote();
     }
     const accounts = status.node?.accounts ?? [];
+    if (this.accountAddress && (!status.connected || !accounts.includes(this.accountAddress))) {
+      this.accountAddress = "";
+      this.clearPasswords();
+    }
     if (!accounts.includes(this.selectedAccount)) {
       this.selectedAccount =
         status.node?.signer && accounts.includes(status.node.signer)
@@ -504,8 +510,20 @@ export class CypherPage extends LitElement {
         );
         return;
       }
-      case "unlock": {
+      case "unlock":
+      case "lock": {
+        const address = this.accountAddress;
         const password = this.takePassword("cypher-account-password");
+        if (!this.status?.connected || !this.status.node?.accounts.includes(address)) {
+          this.error = t("cypher.accountRequired");
+          return;
+        }
+        if (action === "lock") {
+          await this.request<{ locked: boolean }>("cypher.accounts.lock", { address }, (value) => {
+            this.result = t(value.locked ? "cypher.locked" : "cypher.refused", { address });
+          });
+          return;
+        }
         const duration = Number(this.duration);
         if (!Number.isInteger(duration) || duration < 1 || duration > 86400) {
           this.error = t("cypher.durationInvalid");
@@ -513,22 +531,13 @@ export class CypherPage extends LitElement {
         }
         await this.request<{ unlocked: boolean }>(
           "cypher.accounts.unlock",
-          { address: this.walletAddress, password, duration },
+          { address, password, duration },
           (value) => {
-            this.result = t(value.unlocked ? "cypher.unlocked" : "cypher.refused");
+            this.result = t(value.unlocked ? "cypher.unlocked" : "cypher.refused", { address });
           },
         );
         return;
       }
-      case "lock":
-        await this.request<{ locked: boolean }>(
-          "cypher.accounts.lock",
-          { address: this.walletAddress },
-          (value) => {
-            this.result = t(value.locked ? "cypher.locked" : "cypher.refused");
-          },
-        );
-        return;
       case "mining-start": {
         const password = this.takePassword("cypher-mining-password");
         const threads = Number(this.threads);
@@ -621,6 +630,7 @@ export class CypherPage extends LitElement {
       error: this.error,
       result: this.result,
       selectedAccount: this.selectedAccount,
+      accountAddress: this.accountAddress,
       recipient: this.recipient,
       threads: this.threads,
       duration: this.duration,
@@ -630,6 +640,10 @@ export class CypherPage extends LitElement {
         this.selectedAccount = address;
         this.reward = null;
         this.recipient = "";
+        this.clearPasswords();
+      },
+      onAccountAddress: (address) => {
+        this.accountAddress = address;
         this.clearPasswords();
       },
       onRecipient: (value) => {

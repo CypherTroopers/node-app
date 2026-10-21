@@ -153,7 +153,21 @@ export async function runBrowserProof({ bootstrapUrl, baselinePath }) {
         : "Connected-node fixtures display all six management panels. No before screenshot was supplied; this run records current screens only. The connected data is synthetic.",
     );
     await select("wallets");
-    await page.locator("#cypher-wallet").selectOption(second);
+    await page.getByLabel("Account to unlock or lock", { exact: true }).selectOption(second);
+    await page.locator("#cypher-account-password").fill("fixture-password");
+    await page.locator('[data-cypher-action="unlock"]').click();
+    await page.waitForFunction(
+      () => !document.querySelector('[data-cypher-action="refresh"]').disabled,
+    );
+    assert.deepEqual(
+      fixture.requests.find((row) => row.method === "cypher.accounts.unlock").params,
+      {
+        address: second,
+        password: "fixture-password",
+        duration: 300,
+      },
+    );
+    assert.equal(await page.locator("#cypher-account-password").inputValue(), "");
     await page.locator('[data-cypher-action="lock"]').click();
     await page.waitForFunction(
       () => !document.querySelector('[data-cypher-action="refresh"]').disabled,
@@ -165,6 +179,7 @@ export async function runBrowserProof({ bootstrapUrl, baselinePath }) {
       fixture.requests.some((row) => row.method === "cypher.accounts.select"),
       false,
     );
+    assert.equal(await page.locator("#cypher-send-wallet").inputValue(), signer);
     await page.locator("#cypher-panel-wallets summary").click();
     await page.locator('[data-wallet-action="generate"]').click();
     await page.locator('[data-wallet-value="address"]').waitFor();
@@ -182,7 +197,7 @@ export async function runBrowserProof({ bootstrapUrl, baselinePath }) {
     await page.locator("#cypher-app-token").waitFor();
     assert.equal((await page.locator("body").innerText()).includes(`0x${"0".repeat(63)}1`), false);
     check(
-      "Selected-wallet mutations stay separate from signer selection; generated private keys are masked and are removed synchronously on sign-out.",
+      "Explicit account selection targets Unlock and Lock without changing the signer or sending wallet; passwords clear, and generated private keys are masked and removed on sign-out.",
     );
 
     fixture = createNodeFixture();

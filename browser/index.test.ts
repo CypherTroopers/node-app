@@ -1,6 +1,6 @@
 import type { LitElement } from "lit";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { CypherStatus } from "../src/cypher/types.ts";
+import type { CypherStatus, CypherWallets } from "../src/cypher/types.ts";
 import type { NativeSetupStatus } from "../src/native/types.ts";
 import type { WalletGeneratorStatus } from "../src/wallet-generator/types.ts";
 import { createTestHost } from "./host.test-support.ts";
@@ -48,7 +48,7 @@ const ready: NativeSetupStatus = {
   progress: null,
   error: null,
 };
-const network = {
+const network: CypherWallets["network"] = {
   chainId: "0x9a249f",
   genesisHash: "0x001c8239f25a697933e2a54511a576205fb21cbb80dc974adb29894dc80250ad",
   currency: "CLX",
@@ -111,6 +111,7 @@ function deferred<T>() {
 async function mount(
   options: {
     node?: CypherStatus;
+    wallets?: CypherWallets;
     setup?: NativeSetupStatus;
     locale?: string;
     admin?: boolean;
@@ -123,7 +124,7 @@ async function mount(
       return options.setup ?? ready;
     }
     if (method === "cypher.wallets.list") {
-      return wallets;
+      return options.wallets ?? wallets;
     }
     if (method === "cypher.transfers.list") {
       return { transfers: [] };
@@ -277,6 +278,110 @@ describe("standalone Cypher management page", () => {
     },
   );
 
+  it("unlocks an explicitly selected account outside the wallet page without changing the signer or sending wallet", async () => {
+    const unlocking = deferred<unknown>();
+    const fixture = await mount({
+      node: {
+        ...connected,
+        node: { ...connected.node!, accounts: [signer, recipient], mining: true },
+      },
+      wallets: { ...wallets, wallets: wallets.wallets.slice(0, 1), limit: 1 },
+      respond: async (method) => {
+        if (method === "cypher.accounts.unlock") return unlocking.promise;
+        if (method === "cypher.accounts.lock") return { locked: true };
+        throw new Error(`Unexpected request ${method}`);
+      },
+    });
+    const { element, request, complete, render } = fixture;
+    element.querySelector<HTMLButtonElement>("#cypher-tab-wallets")!.click();
+    await complete("cypher.setup.status");
+    await complete("cypher.status");
+    const account = element.querySelector<HTMLSelectElement>("#cypher-unlock-account");
+    expect(account).not.toBeNull();
+    expect(account!.labels?.[0]?.textContent).toContain("Account to unlock or lock");
+    expect([...account!.options].map((option) => option.value)).toEqual(["", signer, recipient]);
+    expect(account!.options[0]?.textContent).toContain("Select an account");
+    expect(account!.value).toBe("");
+    for (const action of ["unlock", "lock"]) {
+      expect(button(element, "cypher", action).disabled).toBe(true);
+    }
+    fill(element, "cypher-account-password", "password-for-previous-target");
+    account!.value = recipient;
+    account!.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(element.querySelector<HTMLInputElement>("#cypher-account-password")!.value).toBe("");
+    await render();
+    fill(element, "cypher-account-password", "fixture-password");
+    button(element, "cypher", "unlock").click();
+    expect(element.querySelector<HTMLInputElement>("#cypher-account-password")!.value).toBe("");
+    expect(request.mock.calls.find(([method]) => method === "cypher.accounts.unlock")?.[1]).toEqual(
+      {
+        address: recipient,
+        password: "fixture-password",
+        duration: 300,
+      },
+    );
+    await render();
+    expect(account!.disabled).toBe(true);
+    expect(element.querySelector<HTMLSelectElement>("#cypher-account")!.value).toBe(signer);
+    expect(element.querySelector<HTMLSelectElement>("#cypher-send-wallet")!.value).toBe(signer);
+    unlocking.resolve({ unlocked: true });
+    await complete("cypher.accounts.unlock");
+    button(element, "cypher", "refresh").click();
+    await complete("cypher.setup.status");
+    await complete("cypher.status");
+    expect(account!.value).toBe(recipient);
+    expect(account!.disabled).toBe(false);
+    button(element, "cypher", "lock").click();
+    await complete("cypher.accounts.lock");
+    expect(request.mock.calls.find(([method]) => method === "cypher.accounts.lock")?.[1]).toEqual({
+      address: recipient,
+    });
+    expect(element.querySelector<HTMLSelectElement>("#cypher-account")!.value).toBe(signer);
+    expect(element.querySelector<HTMLSelectElement>("#cypher-send-wallet")!.value).toBe(signer);
+    expect(request.mock.calls.some(([method]) => method === "cypher.accounts.select")).toBe(false);
+  });
+
+  it.each(["removed", "empty", "disconnected"] as const)(
+    "clears the unlock target and password when the selected account becomes %s",
+    async (change) => {
+      const status = {
+        ...connected,
+        node: { ...connected.node!, accounts: [signer, recipient] },
+      };
+      const fixture = await mount({ node: status });
+      const { element, complete, render } = fixture;
+      element.querySelector<HTMLButtonElement>("#cypher-tab-wallets")!.click();
+      await complete("cypher.setup.status");
+      await complete("cypher.status");
+      const account = element.querySelector<HTMLSelectElement>("#cypher-unlock-account");
+      expect(account).not.toBeNull();
+      account!.value = recipient;
+      account!.dispatchEvent(new Event("change", { bubbles: true }));
+      await render();
+      fill(element, "cypher-account-password", "fixture-password");
+      if (change === "disconnected") {
+        Object.assign(status, node);
+      } else {
+        status.node.accounts = change === "empty" ? [] : [signer];
+      }
+      button(element, "cypher", "refresh").click();
+      await complete("cypher.setup.status");
+      await complete("cypher.status");
+      expect(account!.value).toBe("");
+      expect(account!.disabled).toBe(change !== "removed");
+      expect(element.querySelector<HTMLInputElement>("#cypher-account-password")!.value).toBe("");
+      for (const action of ["unlock", "lock"]) {
+        expect(button(element, "cypher", action).disabled).toBe(true);
+        button(element, "cypher", action).click();
+      }
+      expect(
+        fixture.request.mock.calls.some(([method]) =>
+          ["cypher.accounts.unlock", "cypher.accounts.lock"].includes(method),
+        ),
+      ).toBe(false);
+    },
+  );
+
   it.each(["disconnect", "hide", "pagehide", "scope", "abort"] as const)(
     "clears a revealed wallet on public lifecycle change: %s",
     async (reason) => {
@@ -356,6 +461,9 @@ describe("standalone Cypher management page", () => {
     }
     expect(button(fixture.element, "cypher", "refresh").disabled).toBe(false);
     expect(button(fixture.element, "cypher", "setup-prepare").disabled).toBe(true);
+    expect(
+      fixture.element.querySelector<HTMLSelectElement>("#cypher-unlock-account")?.disabled,
+    ).toBe(true);
   });
 
   it("never shows raw key-bearing failures or retries generation automatically", async () => {

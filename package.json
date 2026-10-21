@@ -1,6 +1,6 @@
 {
   "name": "@cyphertroopers/cypher-node-app",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Standalone ColossusX node manager for Windows, macOS, and Linux.",
   "type": "module",
   "license": "MIT",

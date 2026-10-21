@@ -82,12 +82,14 @@ type CypherProps = {
   error: string | null;
   result: string | null;
   selectedAccount: string;
+  accountAddress: string;
   recipient: string;
   threads: string;
   duration: string;
   allowed: (method: string) => boolean;
   onAction: (action: CypherAction) => void;
   onAccount: (value: string) => void;
+  onAccountAddress: (value: string) => void;
   onRecipient: (value: string) => void;
   onThreads: (value: string) => void;
   onDuration: (value: string) => void;
@@ -130,6 +132,9 @@ export function renderCypher(props: CypherProps): TemplateResult {
   const status = props.status;
   const node = status?.node;
   const accountReady = Boolean(status?.connected && props.selectedAccount);
+  const accountActionReady = Boolean(
+    status?.connected && node?.accounts.includes(props.accountAddress),
+  );
   const writable = props.canAdmin && status?.connected && !props.busy;
   const button = (action: CypherAction, label: string, enabled: boolean) => html`
     <button
@@ -387,6 +392,20 @@ export function renderCypher(props: CypherProps): TemplateResult {
         description: t("cypher.passwordHint"),
         stacked: true,
         control: html`<div class="cypher-form cypher-form--columns">
+          <label class="field"
+            ><span>${t("cypher.accountTarget")}</span>
+            <select
+              id="cypher-unlock-account"
+              class="settings-select"
+              aria-label=${t("cypher.accountTarget")}
+              .value=${live(props.accountAddress)}
+              ?disabled=${!writable || !node?.accounts.length}
+              @change=${(event: Event) => props.onAccountAddress((event.target as HTMLSelectElement).value)}
+            >
+              <option value="">${t("cypher.chooseAccount")}</option>
+              ${(node?.accounts ?? []).map((address) => html`<option value=${address}>${address}</option>`)}
+            </select></label
+          >
           ${password("cypher-account-password", "cypher.accountPassword")}
           <label class="field"
             ><span>${t("cypher.unlockDuration")}</span
@@ -402,7 +421,7 @@ export function renderCypher(props: CypherProps): TemplateResult {
               @input=${(event: Event) => props.onDuration((event.target as HTMLInputElement).value)}
           /></label>
           <div class="cypher-actions">
-            ${button("create", "cypher.createAccount", props.allowed("cypher.accounts.create") && Boolean(status?.connected))}${button("unlock", "cypher.unlock", props.allowed("cypher.accounts.unlock") && walletReady)}${button("lock", "cypher.lock", props.allowed("cypher.accounts.lock") && walletReady)}
+            ${button("create", "cypher.createAccount", props.allowed("cypher.accounts.create") && Boolean(status?.connected))}${button("unlock", "cypher.unlock", props.allowed("cypher.accounts.unlock") && accountActionReady)}${button("lock", "cypher.lock", props.allowed("cypher.accounts.lock") && accountActionReady)}
           </div>
         </div>`,
       })}

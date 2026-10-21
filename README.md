@@ -6,16 +6,16 @@ Download the app for your OS. No GitHub account or cloning is required. [Release
 
 | OS                  | Download                                                                                                                                 | Install                                        |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| Windows x64         | [Windows EXE](https://github.com/CypherTroopers/node-app/releases/download/v0.1.4/ColossusX-Node-Manager-0.1.4-win-x64.exe)              | Save the downloaded file.                      |
-| Mac — Apple silicon | [Mac DMG](https://github.com/CypherTroopers/node-app/releases/download/v0.1.4/ColossusX-Node-Manager-0.1.4-mac-arm64.dmg)                | Open the DMG and drag the app to Applications. |
-| Linux x64           | [Linux AppImage](https://github.com/CypherTroopers/node-app/releases/download/v0.1.4/ColossusX-Node-Manager-0.1.4-linux-x86_64.AppImage) | Save the downloaded file.                      |
+| Windows x64         | [Windows EXE](https://github.com/CypherTroopers/node-app/releases/download/v0.1.5/ColossusX-Node-Manager-0.1.5-win-x64.exe)              | Save the downloaded file.                      |
+| Mac — Apple silicon | [Mac DMG](https://github.com/CypherTroopers/node-app/releases/download/v0.1.5/ColossusX-Node-Manager-0.1.5-mac-arm64.dmg)                | Open the DMG and drag the app to Applications. |
+| Linux x64           | [Linux AppImage](https://github.com/CypherTroopers/node-app/releases/download/v0.1.5/ColossusX-Node-Manager-0.1.5-linux-x86_64.AppImage) | Save the downloaded file.                      |
 
 ## 2. Run
 
 Windows — open PowerShell in the download folder:
 
 ```powershell
-.\ColossusX-Node-Manager-0.1.4-win-x64.exe
+.\ColossusX-Node-Manager-0.1.5-win-x64.exe
 ```
 
 Mac:
@@ -29,12 +29,14 @@ The Mac app uses ad-hoc signing and is not notarized. If macOS blocks the first 
 Linux — open a terminal in the download folder:
 
 ```sh
-chmod +x ./ColossusX-Node-Manager-0.1.4-linux-x86_64.AppImage
-APPIMAGE_EXTRACT_AND_RUN=1 ./ColossusX-Node-Manager-0.1.4-linux-x86_64.AppImage
+chmod +x ./ColossusX-Node-Manager-0.1.5-linux-x86_64.AppImage
+APPIMAGE_EXTRACT_AND_RUN=1 ./ColossusX-Node-Manager-0.1.5-linux-x86_64.AppImage
 ```
 
 ## 3. View the UI
 
 The app window opens automatically with six tabs. Choose **Prepare node**, wait for **Ready**, then open **Node → Start node**. Keep the app open while the node is running.
 
-For v0.1.4, stop the old node before updating, then choose **Prepare node** to refresh the bundled genesis file. Verified cached binaries are reused. Existing chain databases are not migrated; an old-genesis database requires a separate backed-up rebuild before using the new chain.
+To unlock a local account, open **Wallets**, choose **Account to unlock or lock**, enter its password and unlock duration, then choose **Unlock account**.
+
+From v0.1.4, stop the node, close the app, install v0.1.5, then start the node. The genesis and node binaries are unchanged. From v0.1.3 or earlier, run **Prepare node** to refresh the genesis file; existing old-genesis databases still require a separate backed-up rebuild.
