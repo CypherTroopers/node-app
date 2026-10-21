@@ -71,9 +71,7 @@ beforeEach(async () => {
   const assets: Record<string, string> = {
     "cypher/colossusX_linux.sh": "#!/bin/sh\nexit 0\n",
     "cypher/genesis.json": "{}\n",
-    "cypher/config/browser-relay/common-mine.json": "{}\n",
     "cypher/licenses/LICENSE": "fixture node license\n",
-    "native/browser-relay.sh": "# fixture relay\n",
     "native/wallet-build-info/linux-amd64.json": '{"historical":true}\n',
     "native/wallet-build-info/linux-arm64.json": '{"historical":true}\n',
     "wallet-generator/LICENSE": "fixture wallet license\n",
@@ -125,6 +123,14 @@ describe("native installation owner", () => {
     expect(
       (await fs.stat(path.join(installer.nodeRoot, "build/bin/cypher-linux-amd64"))).mode & 0o111,
     ).not.toBe(0);
+    expect(await fs.readFile(path.join(installer.nodeRoot, "colossusX_linux.sh"), "utf8")).toBe(
+      "#!/bin/sh\nexit 0\n",
+    );
+    await expect(
+      fs.lstat(path.join(installer.nodeRoot, "build/browser-relay.sh")),
+    ).rejects.toMatchObject({
+      code: "ENOENT",
+    });
     expect(await fs.readdir(path.join(stateDir, "native"))).toEqual(
       expect.arrayContaining([
         path.basename(installer.nodeRoot),
@@ -156,6 +162,64 @@ describe("native installation owner", () => {
     });
     expect(requests).toHaveLength(1);
     expect(requests[0]).toContain("/bin/linux-arm64/coldwalletgenerator");
+  });
+
+  it("upgrades a prepared launcher's bundled files offline without changing chain or peer data", async () => {
+    await installer.prepare({ assertCurrent() {} });
+    const legacyRelay = path.join(installer.nodeRoot, "build/browser-relay.sh");
+    const legacyRelayConfig = path.join(
+      installer.nodeRoot,
+      "config/browser-relay/common-mine.json",
+    );
+    await fs.mkdir(path.dirname(legacyRelayConfig), { recursive: true });
+    await fs.writeFile(legacyRelay, "# retired relay helper\n");
+    await fs.writeFile(legacyRelayConfig, "{}\n");
+    const dataRoot = path.join(stateDir, "cypher", "chaindbname");
+    const operatorFiles = {
+      "cypher/chaindata/CURRENT": "existing chain database\n",
+      "keystore/account": "existing encrypted account\n",
+      "cypher/static-nodes.json": '["operator static peer"]\n',
+      "cypher/trusted-nodes.json": '["operator trusted peer"]\n',
+    };
+    for (const [name, contents] of Object.entries(operatorFiles)) {
+      const destination = path.join(dataRoot, name);
+      await fs.mkdir(path.dirname(destination), { recursive: true });
+      await fs.writeFile(destination, contents);
+    }
+    const launcher = "#!/bin/sh\n# Updated node launcher\nexit 0\n";
+    await fs.writeFile(path.join(packageRoot, "assets/cypher/colossusX_linux.sh"), launcher);
+    await installer.close();
+    installer = new NativeInstaller({ packageRoot, stateDir, platform: "linux", arch: "x64" });
+    expect(await installer.status()).toMatchObject({
+      state: "missing",
+      node: { ready: false },
+      wallet: { ready: true },
+    });
+    expect(requests).toHaveLength(2);
+    expect(await fs.readFile(path.join(installer.nodeRoot, "colossusX_linux.sh"), "utf8")).not.toBe(
+      launcher,
+    );
+    serve = (_url, response) => {
+      response.writeHead(503);
+      response.end("Network unavailable");
+    };
+    await expect(installer.prepare({ assertCurrent() {} })).resolves.toMatchObject({
+      state: "ready",
+      node: { ready: true },
+      wallet: { ready: true },
+    });
+    expect(requests).toHaveLength(2);
+    expect(await fs.readFile(path.join(installer.nodeRoot, "colossusX_linux.sh"), "utf8")).toBe(
+      launcher,
+    );
+    expect(
+      await fs.readFile(path.join(installer.nodeRoot, "build/bin/cypher-linux-amd64"), "utf8"),
+    ).toBe(fixtures.node);
+    await expect(fs.lstat(legacyRelay)).rejects.toMatchObject({ code: "ENOENT" });
+    await expect(fs.lstat(legacyRelayConfig)).rejects.toMatchObject({ code: "ENOENT" });
+    for (const [name, contents] of Object.entries(operatorFiles)) {
+      expect(await fs.readFile(path.join(dataRoot, name), "utf8")).toBe(contents);
+    }
   });
 
   it("shares one preparation and exposes progress while the HTTP response is pending", async () => {
@@ -248,6 +312,13 @@ describe("native installation owner", () => {
         wallet: { ready: false },
       });
       expect(requests).toHaveLength(2);
+      await expect(restarted.prepare({ assertCurrent() {} })).resolves.toMatchObject({
+        state: "ready",
+        wallet: { ready: true },
+      });
+      expect(await fs.readFile(binary, "utf8")).toBe(fixtures.wallet);
+      expect(requests).toHaveLength(3);
+      expect(requests[2]).toContain("coldwalletgenerator");
     } finally {
       await restarted.close();
     }

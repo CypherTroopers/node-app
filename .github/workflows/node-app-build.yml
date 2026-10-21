@@ -200,6 +200,11 @@ jobs:
       - name: Typecheck the prepared source
         run: pnpm typecheck
 
+      - name: Verify launchers on the native host
+        if: matrix.platform != 'linux'
+        timeout-minutes: 2
+        run: node node_modules/vitest/vitest.mjs run src/cypher/launchers.test.ts
+
       - name: Verify the embedded desktop runtime
         timeout-minutes: 2
         run: |

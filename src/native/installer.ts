@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { createReadStream } from "node:fs";
+import { constants, createReadStream } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { downloadArtifact } from "./download.js";
@@ -90,13 +90,26 @@ export class NativeInstaller {
     return [
       asset(`cypher/${launcher}`, launcher, !this.#windows),
       asset("cypher/genesis.json", "genesis.json"),
-      asset(
-        "cypher/config/browser-relay/common-mine.json",
-        "config/browser-relay/common-mine.json",
-      ),
       asset("cypher/licenses", "licenses"),
-      ...(!this.#windows ? [asset("native/browser-relay.sh", "build/browser-relay.sh")] : []),
     ];
+  }
+
+  async #artifactMatches(artifact: NativeArtifact, destination: string): Promise<boolean> {
+    try {
+      const stat = await fs.lstat(destination);
+      if (
+        !stat.isFile() ||
+        stat.size !== artifact.bytes ||
+        (artifact.executable && !this.#windows && (stat.mode & 0o111) === 0)
+      )
+        return false;
+      const hash = createHash("sha256");
+      for await (const chunk of createReadStream(destination)) hash.update(chunk);
+      return hash.digest("hex") === artifact.sha256;
+    } catch (error) {
+      if (missing(error)) return false;
+      throw error;
+    }
   }
 
   async #inspect(component: Component): Promise<boolean> {
@@ -107,17 +120,7 @@ export class NativeInstaller {
       const directory = await fs.lstat(root);
       if (!directory.isDirectory()) return false;
       for (const artifact of artifacts) {
-        const destination = path.join(root, artifact.path);
-        const stat = await fs.lstat(destination);
-        if (
-          !stat.isFile() ||
-          stat.size !== artifact.bytes ||
-          (artifact.executable && !this.#windows && (stat.mode & 0o111) === 0)
-        )
-          return false;
-        const hash = createHash("sha256");
-        for await (const chunk of createReadStream(destination)) hash.update(chunk);
-        if (hash.digest("hex") !== artifact.sha256) return false;
+        if (!(await this.#artifactMatches(artifact, path.join(root, artifact.path)))) return false;
       }
       for (const asset of this.#assets(component)) {
         const destination = path.join(root, asset.destination);
@@ -335,14 +338,25 @@ export class NativeInstaller {
         assertCurrent();
         await fs.mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
         progress(artifact, 0);
-        await downloadArtifact({
-          pin,
-          artifact,
-          destination,
-          signal,
-          assertCurrent,
-          onProgress: (bytes) => progress(artifact, bytes),
-        });
+        if (
+          await this.#reuseArtifact(
+            artifact,
+            path.join(root, artifact.path),
+            destination,
+            assertCurrent,
+          )
+        ) {
+          progress(artifact, artifact.bytes);
+        } else {
+          await downloadArtifact({
+            pin,
+            artifact,
+            destination,
+            signal,
+            assertCurrent,
+            onProgress: (bytes) => progress(artifact, bytes),
+          });
+        }
         if (artifact.executable && !this.#windows) {
           assertCurrent();
           await fs.chmod(destination, 0o700);
@@ -364,6 +378,27 @@ export class NativeInstaller {
       if (movedPrevious && !installed) await fs.rename(retained, root);
       await fs.rm(stage, { recursive: true, force: true });
     }
+  }
+
+  async #reuseArtifact(
+    artifact: NativeArtifact,
+    source: string,
+    destination: string,
+    assertCurrent: () => void,
+  ): Promise<boolean> {
+    try {
+      const stat = await fs.lstat(source);
+      if (!stat.isFile() || stat.size !== artifact.bytes) return false;
+      assertCurrent();
+      await fs.copyFile(source, destination, constants.COPYFILE_EXCL);
+      // Verify the staged bytes so a changed source cannot enter the new install.
+      if (await this.#artifactMatches(artifact, destination)) return true;
+    } catch (error) {
+      if (!missing(error)) throw error;
+    }
+    assertCurrent();
+    await fs.rm(destination, { force: true });
+    return false;
   }
 
   async close(): Promise<void> {

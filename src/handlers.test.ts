@@ -6,6 +6,7 @@ const services: CypherAppService[] = [];
 afterEach(async () => {
   await Promise.all(services.splice(0).map((service) => service.stop()));
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
 });
 
 function fixture() {
@@ -36,6 +37,38 @@ describe("Cypher app public operation boundary", () => {
     session.abort();
     await expect(invoke("cypher.setup.prepare")).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(prepare).not.toHaveBeenCalled();
+  });
+
+  it("requires current managed launch files before starting, independently of the wallet or an external root", async () => {
+    const { service, invoke } = fixture();
+    const owners = service.current();
+    const stopped = await owners.node.status();
+    const start = vi.spyOn(owners.node, "start").mockResolvedValue(stopped);
+    await expect(invoke("cypher.start")).rejects.toMatchObject({
+      code: "UNAVAILABLE",
+      message: expect.stringContaining("Prepare node"),
+    });
+    expect(start).not.toHaveBeenCalled();
+
+    const setup = await owners.installer.status();
+    expect(setup.node.ready).toBe(false);
+    vi.spyOn(owners.installer, "status").mockResolvedValue({
+      ...setup,
+      node: { ...setup.node, ready: true },
+      wallet: { ...setup.wallet, ready: false },
+    });
+    await expect(invoke("cypher.start")).resolves.toEqual(stopped);
+    expect(start).toHaveBeenCalledOnce();
+
+    vi.stubEnv("CYPHER_ROOT", "/operator-managed-native");
+    const external = fixture();
+    const externalOwners = external.service.current();
+    const externalStatus = await externalOwners.node.status();
+    expect((await externalOwners.installer.status()).node.ready).toBe(false);
+    expect(externalStatus.rootDir).not.toBe(externalOwners.installer.nodeRoot);
+    const externalStart = vi.spyOn(externalOwners.node, "start").mockResolvedValue(externalStatus);
+    await expect(external.invoke("cypher.start")).resolves.toEqual(externalStatus);
+    expect(externalStart).toHaveBeenCalledOnce();
   });
 
   it.each([

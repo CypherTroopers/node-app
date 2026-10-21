@@ -4,6 +4,10 @@
 Setup downloads only this computer's artifacts. It does not clone repositories,
 follow branch tips, or download tools at plugin import, startup, or status reads.
 Chain data and keystores stay outside these replaceable runtime directories.
+When a new app changes its bundled launchers, run Prepare again. Setup copies and
+verifies already installed native artifacts instead of downloading them again
+when their pins still match. It replaces the launch files without changing chain
+data, keystores, or existing peer files.
 
 Cypher node distribution:
 `CypherTroopers/cypher@9ca4b9793d6e3527f4439ab4cc29a500a160c134`.
@@ -27,7 +31,6 @@ source. `wallet-build-info/` preserves the original retained per-target metadata
 including its historical source attribution, for those exact bytes. Setup copies
 this metadata instead of downloading the contradictory rewritten files.
 
-`browser-relay.sh` is the small helper required by the packaged POSIX launchers.
 No downloaded executable, source archive, JSON installation state, or mutable
 branch reference is included here. Existing third-party license notices remain
 under `assets/cypher/licenses` and `assets/wallet-generator` and are copied to

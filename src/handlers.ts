@@ -1,3 +1,4 @@
+import fs from "node:fs/promises";
 import { CypherAuthorityError, createRequestAuthority } from "./authority.js";
 import { CypherIpcError } from "./cypher/ipc.js";
 import {
@@ -196,9 +197,28 @@ export class CypherOperations {
     register("cypher.setup.prepare", "mutation", emptyParams, (owners, _params, authority) =>
       service.prepare(owners, authority),
     );
-    mutation("cypher.start", emptyParams, (manager, _params, authority) =>
-      manager.start(authority),
-    );
+    register("cypher.start", "mutation", emptyParams, async (owners, _params, authority) => {
+      const selectedRoot = (await owners.node.status()).rootDir;
+      const managedRoot =
+        process.platform === "win32"
+          ? owners.installer.nodeRoot
+          : await fs.realpath(owners.installer.nodeRoot).catch((error: unknown) => {
+              if (error instanceof Error && "code" in error && error.code === "ENOENT")
+                return owners.installer.nodeRoot;
+              throw error;
+            });
+      const managed =
+        process.platform === "win32"
+          ? selectedRoot.toLowerCase() === managedRoot.toLowerCase()
+          : selectedRoot === managedRoot;
+      if (managed && !(await owners.installer.status()).node.ready) {
+        throw new CypherOperationError(
+          "Choose Prepare node to install or refresh the current launch files before starting.",
+        );
+      }
+      authority.assertCurrent();
+      return owners.node.start(authority);
+    });
     mutation("cypher.stop", emptyParams, (manager, _params, authority) => manager.stop(authority));
     mutation("cypher.connect", emptyParams, (manager, _params, authority) =>
       manager.connect(authority),
